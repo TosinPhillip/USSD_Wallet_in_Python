@@ -1,5 +1,3 @@
-re
-random
 gunicorn
 flask
 africastalking
