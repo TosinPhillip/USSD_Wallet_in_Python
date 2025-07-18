@@ -321,9 +321,10 @@ def ussd_handler(session, user_input):
         return main_menu()
 
 # To start a session:
-session = {'menu': 'main'}
-print(main_menu())
-while True:
-    user_input = input("> ")
-    response = ussd_handler(session, user_input)
-    print(response)
+if __name__ == "__main__":
+    session = {'menu': 'main'}
+    print(main_menu())
+    while True:
+        user_input = input("> ")
+        response = ussd_handler(session, user_input)
+        print(response)
