@@ -1,5 +1,5 @@
-random
-flask
-pymongo
 gunicorn
+flask
 africastalking
+pymongo
+
