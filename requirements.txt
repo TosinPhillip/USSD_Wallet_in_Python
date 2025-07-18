@@ -1,0 +1,7 @@
+random
+flask
+pymongo
+re
+gunicorn
+datetime
+africastalking
