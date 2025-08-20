@@ -55,7 +55,7 @@ def check_pin(phone_number, pin):
 def healthz():
     return "OK", 200
 
-@app.route("/", methods=["POST", "GET"])
+@app.route("/", methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 def ussd():
     session_id = request.values.get("sessionId", "")
     service_code = request.values.get("serviceCode", "")
@@ -128,4 +128,4 @@ def ussd():
     return Response(response, mimetype="text/plain")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
