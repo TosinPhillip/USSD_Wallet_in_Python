@@ -3,3 +3,10 @@ flask
 africastalking
 pymongo
 python-dotenv
+flask
+flask-pymongo
+pymongo
+dnspython
+pycountry
+phonenumbers
+bcrypt
