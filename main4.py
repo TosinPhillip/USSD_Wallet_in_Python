@@ -131,7 +131,7 @@ def ussd():
             pin = menu[2]
             if authenticate(acct_num, pin):
                 user = get_user_by_acct(acct_num)
-                response = f"END Your balance is ₦{user['balance']:.2f}."
+                response = f"END Your balance is NGN{user['balance']:.2f}."
             else:
                 response = "END Invalid account number or password."
             return Response(response, mimetype="text/plain")
@@ -175,7 +175,7 @@ def ussd():
                     "from": sender_acct,
                     "date": now
                 })
-                response = f"END Transaction successful! Sent ₦{amount:,.2f}."
+                response = f"END Transaction successful! Sent NGN{amount:,.2f}."
             return Response(response, mimetype="text/plain")
         return Response(response, mimetype="text/plain")
 
@@ -208,7 +208,7 @@ def ussd():
             if not txns:
                 response = "END No recent transactions."
             else:
-                lines = [f"{t['date'][:10]}: {t['type'].capitalize()} ₦{t['amount']:.2f}" for t in txns]
+                lines = [f"{t['date'][:10]}: {t['type'].capitalize()} NGN{t['amount']:.2f}" for t in txns]
                 response = "END " + "\n".join(lines)
         elif len(menu) == 3 and menu[1] == "3":
             acct_num = menu[2]
