@@ -45,11 +45,6 @@ def check_pin(phone_number, pin):
     user = get_user(phone_number)
     return user and user["pin"] == pin
 
-# # Root route for browser and Render health check
-# @app.route("/", methods=["GET"])
-# def index():
-#     return "USSD Wallet API running.", 200
-
 # Optional: Health check route (Render and k8s often use this)
 @app.route("/healthz", methods=["GET"])
 def healthz():
@@ -66,7 +61,7 @@ def ussd():
     response = ""
 
     if not menu or menu[0] == "":
-        response = "CON Welcome to USSD Wallet\n"
+        response = "CON Welcome to Francis' USSD Wallet\n"
         response += "1. Create Account\n2. Check Balance\n3. Send Money\n4. Enquiry Services\n5. Exit"
         return Response(response, mimetype="text/plain")
 
@@ -128,4 +123,4 @@ def ussd():
     return Response(response, mimetype="text/plain")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)
