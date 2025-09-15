@@ -243,7 +243,177 @@ def ussd():
     elif menu[0] == "2":
         # Ikwere selected
         response = "END Thank you"
+        menu = menu[1:]
+        
+        # Main menu
+        if not menu or menu[0] == "":
+            response = "CON Nno Franciswallet.\n"
+            response += "1. Wé Akánt. \n2.Le Bálands \n3. Zí Ego \n4. Ōrụ Ọjụjụ \n5. Pụụta"
+            return Response(response, mimetype="text/plain")
+
+        # Create Account
+        if menu[0] == "1":
+            if len(menu) == 1:
+                response = "CON Biko tinye aha gị dum:"
+            elif len(menu) == 2:
+                response = "CON Tinye ụbọchi ọmụmụ gị(DD/MM/YYYY):"
+            elif len(menu) == 3:
+                response = "CON Tinye BVN gị nke ọnụọgụ iri na otu dijit:"
+            elif len(menu) == 4:
+                response = "CON Tinye NIN gị nke ọnụọgụ iri na otu dijit:"
+            elif len(menu) == 5:
+                response = "CON Wé paswọọd dijit 4 ruo 6:"
+            elif len(menu) == 6:
+                response = "CON Kwenye paswọọd gị:"
+            elif len(menu) == 7:
+                name = menu[1]
+                dob = menu[2]
+                bvn = menu[3]
+                nin = menu[4]
+                pin = menu[5]
+                pin_confirm = menu[6]
+                errors = []
+                try:
+                    datetime.datetime.strptime(dob, "%d/%m/%Y")
+                except Exception:
+                    errors.append("Ụdị Ụbọchi Ọmụmụ ezighi ezi.")
+                if not validate_bvn(bvn):
+                    errors.append("Ụdị BVN ezighi ezi.")
+                if not validate_nin(nin):
+                    errors.append("Ụdị NIN ezighi ezi.")
+                if not validate_pin(pin):
+                    errors.append("PIN ga-abụ dijit 4 ruo 6.")
+                if pin != pin_confirm:
+                    errors.append("PIN adịghị kwekọọ.")
+                if errors:
+                    response = "END Mperi: " + "; ".join(errors)
+                else:
+                    acct_num = generate_account_number()
+                    users_db.insert_one({
+                        "name": name,
+                        "dob": dob,
+                        "bvn": bvn,
+                        "nin": nin,
+                        "pin": pin,
+                        "balance": 0.0,
+                        "acct_num": acct_num,
+                        "phone_number": phone_number
+                    })
+                    response = f"END Akánt e wérí! Nọmba akánt gị bụ {acct_num}."
+                return Response(response, mimetype="text/plain")
+            return Response(response, mimetype="text/plain")
+
+        # Check Balance
+        if menu[0] == "2":
+            if len(menu) == 1:
+                response = "CON Tinye nọmba akánt gị:"
+            elif len(menu) == 2:
+                response = "CON Tinye paswọọd gị:"
+            elif len(menu) == 3:
+                acct_num = menu[1]
+                pin = menu[2]
+                if authenticate(acct_num, pin):
+                    user = get_user_by_acct(acct_num)
+                    response = f"END Bálans gị bụ NGN{user['balance']:.2f}."
+                else:
+                    response = "END Nọmba akánt ma ọ bụ paswọọd ezighi ezi."
+                return Response(response, mimetype="text/plain")
+            return Response(response, mimetype="text/plain")
+
+        # Send Money
+        if menu[0] == "3":
+            if len(menu) == 1:
+                response = "CON Tinye nọmba akánt onye nnata:"
+            elif len(menu) == 2:
+                response = "CON Tinye ego ị ga-eziga:"
+            elif len(menu) == 3:
+                response = "CON Tinye paswọọd gị iji kwenye:"
+            elif len(menu) == 4:
+                sender = users_db.find_one({"phone_number": phone_number})
+                sender_acct = sender["acct_num"] if sender else None
+                recipient_acct = menu[1]
+                amount = float(menu[2])
+                pin = menu[3]
+                sender_user = get_user_by_acct(sender_acct)
+                recipient_user = get_user_by_acct(recipient_acct)
+                if not sender_user or not recipient_user:
+                    response = "END Ụgwọ agaghị eme. Nọmba akánt ezighi ezi."
+                elif not authenticate(sender_acct, pin):
+                    response = "END Ụgwọ agaghị eme. Paswọọd ezighi ezi."
+                elif sender_user['balance'] < amount:
+                    response = "END Ụgwọ agaghị eme. Ego adịghị ezuru."
+                else:
+                    users_db.update_one({"acct_num": sender_acct}, {"$inc": {"balance": -amount}})
+                    users_db.update_one({"acct_num": recipient_acct}, {"$inc": {"balance": amount}})
+                    now = datetime.datetime.now().isoformat()
+                    record_transaction(sender_acct, {
+                        "type": "debit",
+                        "amount": amount,
+                        "to": recipient_acct,
+                        "date": now
+                    })
+                    record_transaction(recipient_acct, {
+                        "type": "credit",
+                        "amount": amount,
+                        "from": sender_acct,
+                        "date": now
+                    })
+                    response = f"END Ụgwọ gara nke ọma! Ezitere NGN{amount:,.2f}."
+                return Response(response, mimetype="text/plain")
+            return Response(response, mimetype="text/plain")
+
+        # Enquiry Services
+        if menu[0] == "4":
+            if len(menu) == 1:
+                response = (
+                    "CON Ōrụ Ọjụjụ:\n"
+                    "1. Nlekọta Ndị Ahịa\n"
+                    "2. Akụkọ Ụgwọ\n"
+                    "3. Nkọwa Akánt\n"
+                    "4. Laghachi n’Isi Menu"
+                )
+            elif len(menu) == 2:
+                option = menu[1]
+                if option == "1":
+                    response = f"END Kpọtụrụ: support@wallet.com ma ọ bụ kpọọ {CUSTOMER_CARE}."
+                elif option == "2":
+                    response = "CON Tinye nọmba akánt iji hụ ụgwọ ise gara aga:"
+                elif option == "3":
+                    response = "CON Tinye nọmba akánt iji hụ nkọwa:"
+                elif option == "4":
+                    response = "END Daalụ maka iji Franciswallet."
+                else:
+                    response = "END Nhọrọ ezighi ezi."
+            elif len(menu) == 3 and menu[1] == "2":
+                acct_num = menu[2]
+                txns_doc = transactions_db.find_one({"acct_num": acct_num})
+                txns = txns_doc["txns"][-5:] if txns_doc and "txns" in txns_doc else []
+                if not txns:
+                    response = "END Enweghị ụgwọ ọhụrụ."
+                else:
+                    lines = [f"{t['date'][:10]}: {t['type'].capitalize()} NGN{t['amount']:.2f}" for t in txns]
+                    response = "END " + "\n".join(lines)
+            elif len(menu) == 3 and menu[1] == "3":
+                acct_num = menu[2]
+                user = get_user_by_acct(acct_num)
+                if user:
+                    response = (f"END Aha: {user['name']}\n"
+                                f"Nọmba Akánt: {user['acct_num']}\n"
+                                f"BVN ejikọrọ: {user['bvn']}")
+                else:
+                    response = "END Akánt achọtaghị."
+            return Response(response, mimetype="text/plain")
+
+        # Exit
+        if menu[0] == "5":
+            response = "END Daalụ maka iji Franciswallet. Ka ọ dị!"
+            return Response(response, mimetype="text/plain")
+
+        response = "END Invalid option."
         return Response(response, mimetype="text/plain")
+    
+    
+    
     else:
         # Invalid language selection
         response = "END Invalid language selection."
